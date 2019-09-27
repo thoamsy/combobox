@@ -3,13 +3,29 @@
   --option-active-text-color: #00000;
 }
 
+[data-combobox] {
+  position: relative;
+}
+
+[data-combobox-popover] {
+  position: absolute;
+  width: 400px;
+  top: 0;
+  left: 0;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
 [data-combobox-list] {
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 [data-combobox-option] {
   background: var(--option-active-color);
   color: var(--option-active-text-color);
+  outline: none;
 }
 [data-combobox-option][data-highlighted] {
   --option-active-color: #f7f7f7;

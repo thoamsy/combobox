@@ -10,6 +10,13 @@ import React, {
 } from 'react';
 import './style.css';
 
+const wrapEvent = (theirHandler, ourHandler) => event => {
+  theirHandler && theirHandler(event);
+  if (!event.defaultPrevented) {
+    return ourHandler(event);
+  }
+};
+
 const Context = createContext({
   onSelect() {},
   optionsRef: { current: [] },
@@ -17,6 +24,8 @@ const Context = createContext({
 
 function Combobox({ as: Comp = 'div', onSelect, ...props }) {
   const optionsRef = useRef([]);
+  const inputRef = useRef();
+
   const [selected, setSelected] = useState(null);
 
   const value = useMemo(
@@ -25,6 +34,7 @@ function Combobox({ as: Comp = 'div', onSelect, ...props }) {
       onSelect,
       selected,
       setSelected,
+      inputRef,
     }),
     [selected, onSelect],
   );
@@ -35,17 +45,51 @@ function Combobox({ as: Comp = 'div', onSelect, ...props }) {
     </Context.Provider>
   );
 }
+
 Combobox.defaultProps = {
   onSelect() {},
 };
 
-function ComboList({ as: C = 'ul', ...props }) {
+function ComboPopover({ onKeyDown, ...props }) {
+  const handleKeydown = useKeydown();
+
+  const hidden = false;
+  return (
+    <div
+      hidden={hidden}
+      data-combobox-popover
+      onKeyDown={wrapEvent(onKeyDown, handleKeydown)}
+      {...props}
+    ></div>
+  );
+}
+
+function ComboInput({ as: Comp = 'input', onClick, onChange, ...props }) {
+  const { inputRef } = useContext(Context);
+  const handleKeydown = useKeydown();
+  return (
+    <Comp
+      ref={inputRef}
+      onKeyDown={handleKeydown}
+      onClick={onClick}
+      onChange={onChange}
+      {...props}
+    />
+  );
+}
+
+function ComboList({ as: C = 'ul', onKeyDown, ...props }) {
   // const { optionsRef } = useContext(Context);
 
   const handleKeydown = useKeydown();
 
   return (
-    <C onKeyDown={handleKeydown} {...props} data-combobox-list role="listbox" />
+    <C
+      onKeyDown={wrapEvent(onKeyDown, handleKeydown)}
+      {...props}
+      data-combobox-list
+      role="listbox"
+    />
   );
 }
 
@@ -66,15 +110,17 @@ function ComboOption({ as: C = 'li', value, ...props }) {
     <C
       data-combobox-option
       data-highlighted={isActive ? '' : undefined}
-      {...props}
-      tabIndex={-1}
+      tabIndex="-1"
       onClick={onClick}
+      {...props}
     />
   );
 }
 
 function useKeydown() {
-  const { onSelect, optionsRef, selected, setSelected } = useContext(Context);
+  const { onSelect, optionsRef, selected, setSelected, inputRef } = useContext(
+    Context,
+  );
 
   return function handleKeydown(event) {
     const { current: options } = optionsRef;
@@ -90,6 +136,7 @@ function useKeydown() {
         const pos = options.indexOf(selected);
 
         setSelected(options[(pos + 1) % options.length]);
+        // inputRef.current.focus();
         break;
       }
       case 'ArrowUp': {
@@ -102,6 +149,7 @@ function useKeydown() {
         const pos = options.indexOf(selected);
 
         setSelected(options[(pos - 1 + options.length) % options.length]);
+        // inputRef.current.focus();
         break;
       }
       case 'Enter': {
@@ -129,7 +177,8 @@ const App = () => {
     },
   ]);
 
-  const onSelect = useCallback(
+  const [inputValue, setValue] = useState('');
+  const onCheck = useCallback(
     value => {
       setData(data => {
         return data.map(item =>
@@ -140,17 +189,23 @@ const App = () => {
     [data],
   );
 
-  console.log(data);
   return (
-    <Combobox onSelect={onSelect}>
-      <ComboList>
-        {data.map(({ title, isCheck }) => (
-          <ComboOption value={title} key={title} type="checkbox">
-            <input type="checkbox" onChange={() => {}} checked={isCheck} />{' '}
-            {title}
-          </ComboOption>
-        ))}
-      </ComboList>
+    <Combobox>
+      <ComboInput value={inputValue} onChange={setValue}></ComboInput>
+      <ComboPopover>
+        <ComboList>
+          {data.map(({ title, isCheck }) => (
+            <ComboOption value={title} key={title} type="checkbox">
+              <input
+                type="checkbox"
+                onChange={() => onCheck(title)}
+                checked={isCheck}
+              />{' '}
+              {title}
+            </ComboOption>
+          ))}
+        </ComboList>
+      </ComboPopover>
     </Combobox>
   );
 };
