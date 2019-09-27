@@ -1,0 +1,16 @@
+:root {
+  --option-active-color: #ffffff;
+  --option-active-text-color: #00000;
+}
+
+[data-combobox-list] {
+  list-style: none;
+}
+
+[data-combobox-option] {
+  background: var(--option-active-color);
+  color: var(--option-active-text-color);
+}
+[data-combobox-option][data-highlighted] {
+  --option-active-color: #f7f7f7;
+}
